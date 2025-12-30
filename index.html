@@ -1,1149 +1,490 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Luxe Jewelry - Premium Necklaces & Pendants</title>
-
-    
-
+    <title>LUMIÈRE | Fine Joaillerie</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet">
     <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-FG8GQ096JQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FG8GQ096JQ"></script>
-
-    <script>
-
-        window.dataLayer = window.dataLayer || [];
-
-        function gtag(){dataLayer.push(arguments);}
-
-        gtag('js', new Date());
-
-        gtag('config', 'G-FG8GQ096JQ');
-
-    </script>
-
-    
-
+  gtag('config', 'G-FG8GQ096JQ');
+</script>
     <style>
+        /* --- CSS VARIABLES & THEME --- */
+        :root {
+            --primary-text: #2c2c2c;       /* Charcoal */
+            --accent-gold: #c5a059;        /* Muted Gold */
+            --bg-color: #fcfcfc;           /* Ultra light cream/white */
+            --secondary-bg: #f4f1ea;       /* Warm beige for sections */
+            --white: #ffffff;
+        }
+
 
         * {
-
             margin: 0;
-
             padding: 0;
-
             box-sizing: border-box;
-
         }
 
-        
 
         body {
-
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-
-            background: #f8f9fa;
-
-            color: #333;
-
-            padding: 20px;
-
+            font-family: 'Lato', sans-serif;
+            color: var(--primary-text);
+            background-color: var(--bg-color);
+            line-height: 1.8;
         }
 
-        
 
-        /* Hero Section */
+        h1, h2, h3, h4 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
 
+
+        a { text-decoration: none; color: inherit; transition: 0.3s ease; }
+        ul { list-style: none; }
+
+
+        /* --- NAVIGATION --- */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 8%;
+            background: var(--white);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+
+        .nav-links a:hover {
+            color: var(--accent-gold);
+        }
+
+
+        .icons span {
+            margin-left: 20px;
+            cursor: pointer;
+        }
+
+
+        /* --- HERO SECTION --- */
         .hero {
-
-            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
-
-                        linear-gradient(135deg, #c9b037 0%, #ffd700 100%);
-
-            color: white;
-
+            height: 85vh;
+            /* High-end fashion model wearing jewelry */
+            background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.3)), url('https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-
-            padding: 60px 20px;
-
-            border-radius: 15px;
-
-            margin-bottom: 40px;
-
+            color: var(--white);
         }
 
-        
 
-        .hero h1 {
-
-            font-size: 2.5em;
-
+        .hero-content h1 {
+            font-size: 4.5rem;
             margin-bottom: 15px;
-
+            line-height: 1.1;
         }
 
-        
 
-        .hero p {
-
-            font-size: 1.2em;
-
-            margin-bottom: 25px;
-
+        .hero-content p {
+            font-size: 1.3rem;
+            margin-bottom: 40px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            font-style: italic;
+            font-family: 'Cormorant Garamond', serif;
         }
 
-        
 
-        /* Container */
-
-        .container {
-
-            max-width: 1200px;
-
-            margin: 0 auto;
-
+        /* COMPONENT: BUTTON */
+        .btn {
+            padding: 15px 45px;
+            background-color: var(--white);
+            color: var(--primary-text);
+            border: 1px solid var(--white);
+            font-family: 'Lato', sans-serif;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.4s;
         }
 
-        
 
-        /* Product Grid */
+        .btn:hover {
+            background-color: transparent;
+            color: var(--white);
+        }
 
-        .section-title {
 
+        .btn-dark {
+            background-color: var(--primary-text);
+            color: var(--white);
+            border: 1px solid var(--primary-text);
+        }
+
+
+        .btn-dark:hover {
+            background-color: var(--white);
+            color: var(--primary-text);
+        }
+
+
+        /* --- PRODUCT GRID --- */
+        .products {
+            padding: 100px 8%;
+        }
+
+
+        .section-header {
             text-align: center;
-
-            font-size: 2em;
-
-            margin-bottom: 30px;
-
-            color: #2c3e50;
-
+            margin-bottom: 80px;
         }
 
-        
+
+        .section-header h2 {
+            font-size: 3rem;
+            color: var(--primary-text);
+        }
+
+
+        .section-header p {
+            color: #666;
+            margin-top: 10px;
+        }
+
 
         .product-grid {
-
             display: grid;
-
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-
-            gap: 25px;
-
-            margin-bottom: 50px;
-
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 50px;
         }
 
-        
 
         .product-card {
+            text-align: center;
+            group: 1;
+        }
 
-            background: white;
 
-            border-radius: 12px;
-
+        .img-container {
             overflow: hidden;
-
-            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
-
-            transition: transform 0.3s, box-shadow 0.3s;
-
-            cursor: pointer;
-
-        }
-
-        
-
-        .product-card:hover {
-
-            transform: translateY(-5px);
-
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-
-        }
-
-        
-
-        .product-image {
-
-            width: 100%;
-
-            height: 280px;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            font-size: 80px;
-
+            margin-bottom: 20px;
             position: relative;
-
         }
 
-        
 
-        .product-badge {
-
-            position: absolute;
-
-            top: 15px;
-
-            right: 15px;
-
-            background: #e74c3c;
-
-            color: white;
-
-            padding: 5px 15px;
-
-            border-radius: 20px;
-
-            font-size: 11px;
-
-            font-weight: bold;
-
+        .product-img {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            transition: transform 0.6s ease;
         }
 
-        
 
-        .product-info {
-
-            padding: 20px;
-
+        .product-card:hover .product-img {
+            transform: scale(1.05);
         }
 
-        
 
-        .product-name {
-
-            font-size: 1.2em;
-
-            font-weight: 600;
-
-            margin-bottom: 8px;
-
-            color: #2c3e50;
-
+        .product-title {
+            font-size: 1.4rem;
+            margin: 10px 0;
+            font-family: 'Cormorant Garamond', serif;
         }
 
-        
-
-        .product-description {
-
-            color: #7f8c8d;
-
-            margin-bottom: 12px;
-
-            font-size: 0.9em;
-
-        }
-
-        
 
         .product-price {
-
-            font-size: 1.4em;
-
-            color: #27ae60;
-
-            font-weight: bold;
-
+            color: var(--accent-gold);
+            font-weight: 400;
+            font-size: 1.1rem;
+            display: block;
             margin-bottom: 15px;
-
         }
 
+
+        /* --- ATELIER SECTION (Video & File) --- */
+        .atelier {
+            background-color: var(--secondary-bg);
+            padding: 100px 8%;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 60px;
+        }
+
+
+        .atelier-content {
+            flex: 1;
+            min-width: 300px;
+        }
+
+
+        .atelier-content h2 {
+            font-size: 3rem;
+            margin-bottom: 25px;
+        }
+
+
+        /* COMPONENT: VIDEO */
+        .video-container {
+            flex: 1;
+            min-width: 300px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
         
-
-        .btn {
-
-            padding: 10px 25px;
-
-            border: none;
-
-            border-radius: 8px;
-
-            font-size: 15px;
-
-            cursor: pointer;
-
-            transition: all 0.3s ease;
-
-            font-weight: 600;
-
+        iframe {
             width: 100%;
-
+            height: 400px;
+            border: none;
         }
 
+
+        /* COMPONENT: FILE ATTACHMENT */
+        .download-link {
+            display: inline-block;
+            margin-top: 30px;
+            border-bottom: 1px solid var(--accent-gold);
+            padding-bottom: 2px;
+            color: var(--primary-text);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
         
-
-        .btn-primary {
-
-            background: #f39c12;
-
-            color: white;
-
+        .download-link:hover {
+            color: var(--accent-gold);
         }
 
-        
 
-        .btn-primary:hover {
-
-            background: #e67e22;
-
-            transform: translateY(-2px);
-
+        /* --- FOOTER & FORM --- */
+        footer {
+            background-color: #111;
+            color: #fff;
+            padding: 80px 8%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 50px;
         }
 
-        
 
-        .btn-shop {
-
-            background: #f39c12;
-
-            color: white;
-
-            padding: 12px 35px;
-
-            font-size: 16px;
-
+        .footer-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            margin-bottom: 20px;
         }
 
-        
 
-        /* Contact Form Section */
-
-        .contact-section {
-
-            background: white;
-
-            padding: 35px;
-
-            border-radius: 12px;
-
-            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
-
-            margin-bottom: 50px;
-
+        .form-section {
+            flex: 1;
+            min-width: 300px;
         }
 
-        
+
+        /* COMPONENT: FORM */
+        .consultation-form {
+            margin-top: 20px;
+        }
+
 
         .form-group {
-
-            margin-bottom: 18px;
-
-        }
-
-        
-
-        label {
-
-            display: block;
-
-            margin-bottom: 6px;
-
-            font-weight: 600;
-
-            color: #2c3e50;
-
-        }
-
-        
-
-        input[type="text"],
-
-        input[type="email"],
-
-        input[type="tel"],
-
-        select,
-
-        textarea {
-
-            width: 100%;
-
-            padding: 10px;
-
-            border: 2px solid #e0e0e0;
-
-            border-radius: 6px;
-
-            font-size: 15px;
-
-            transition: border-color 0.3s ease;
-
-        }
-
-        
-
-        input:focus,
-
-        select:focus,
-
-        textarea:focus {
-
-            outline: none;
-
-            border-color: #f39c12;
-
-        }
-
-        
-
-        textarea {
-
-            resize: vertical;
-
-            min-height: 90px;
-
-        }
-
-        
-
-        /* Video Section */
-
-        .video-section {
-
-            background: white;
-
-            padding: 35px;
-
-            border-radius: 12px;
-
-            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
-
-            margin-bottom: 50px;
-
-        }
-
-        
-
-        .video-container {
-
-            position: relative;
-
-            padding-bottom: 56.25%;
-
-            height: 0;
-
-            overflow: hidden;
-
-            border-radius: 8px;
-
-            background: #000;
-
-        }
-
-        
-
-        .video-container iframe {
-
-            position: absolute;
-
-            top: 0;
-
-            left: 0;
-
-            width: 100%;
-
-            height: 100%;
-
-        }
-
-        
-
-        /* Upload Section */
-
-        .upload-section {
-
-            background: white;
-
-            padding: 35px;
-
-            border-radius: 12px;
-
-            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
-
-            margin-bottom: 50px;
-
-        }
-
-        
-
-        .file-upload-wrapper {
-
-            position: relative;
-
-            display: inline-block;
-
-            width: 100%;
-
-        }
-
-        
-
-        .file-upload-input {
-
-            display: none;
-
-        }
-
-        
-
-        .file-upload-label {
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            padding: 35px;
-
-            border: 3px dashed #f39c12;
-
-            border-radius: 8px;
-
-            cursor: pointer;
-
-            transition: all 0.3s ease;
-
-            background: #fef9f0;
-
-        }
-
-        
-
-        .file-upload-label:hover {
-
-            background: #fff3e0;
-
-            border-color: #e67e22;
-
-        }
-
-        
-
-        .file-upload-icon {
-
-            font-size: 45px;
-
-            margin-right: 12px;
-
-        }
-
-        
-
-        .file-info {
-
-            margin-top: 12px;
-
-            padding: 12px;
-
-            background: #e8f5e9;
-
-            border-radius: 6px;
-
-            display: none;
-
-        }
-
-        
-
-        /* Stats Section */
-
-        .stats {
-
-            display: grid;
-
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-
-            gap: 18px;
-
-            margin-bottom: 50px;
-
-        }
-
-        
-
-        .stat-card {
-
-            background: white;
-
-            padding: 25px;
-
-            border-radius: 12px;
-
-            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
-
-            text-align: center;
-
-        }
-
-        
-
-        .stat-number {
-
-            font-size: 2.2em;
-
-            font-weight: bold;
-
-            color: #f39c12;
-
-        }
-
-        
-
-        .stat-label {
-
-            color: #7f8c8d;
-
-            margin-top: 8px;
-
-            font-size: 0.85em;
-
-        }
-
-        
-
-        .section-heading {
-
-            font-size: 1.6em;
-
             margin-bottom: 15px;
-
-            color: #2c3e50;
-
         }
 
+
+        .consultation-form input, 
+        .consultation-form select {
+            width: 100%;
+            padding: 15px;
+            background: #222;
+            border: none;
+            border-bottom: 1px solid #444;
+            color: #fff;
+            font-family: 'Lato', sans-serif;
+            outline: none;
+        }
         
-
-        .section-text {
-
-            margin-bottom: 20px;
-
-            color: #7f8c8d;
-
+        .consultation-form input:focus {
+            border-bottom: 1px solid var(--accent-gold);
         }
 
+
+        .submit-btn {
+            background: var(--accent-gold);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+
+        @media (max-width: 768px) {
+            .hero-content h1 { font-size: 3rem; }
+            nav { flex-direction: column; gap: 15px; padding: 20px; }
+            .nav-links { gap: 20px; }
+        }
     </style>
-
 </head>
-
 <body>
 
-    <!-- Hero Section -->
 
-    <div class="hero">
+    <nav>
+        <div class="logo">Lumière.</div>
+        <ul class="nav-links">
+            <li><a href="#">Collections</a></li>
+            <li><a href="#new-arrivals">New Arrivals</a></li>
+            <li><a href="#atelier">The Atelier</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <div class="icons">
+            <span>Search</span>
+            <span>Bag (0)</span>
+        </div>
+    </nav>
 
-        <h1>✨ Luxe Jewelry ✨</h1>
 
-        <p>Exquisite Necklaces & Pendants</p>
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Elegance is Eternal.</h1>
+            <p>Handcrafted diamonds for the modern muse.</p>
+            <button class="btn" onclick="document.getElementById('new-arrivals').scrollIntoView({behavior: 'smooth'})">Discover the Collection</button>
+        </div>
+    </header>
 
-        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
 
-            <button class="btn btn-shop" onclick="scrollToProducts()">Shop Collection</button>
-
-            <button class="btn btn-shop" onclick="downloadHTML()" style="background: #3498db;">Download HTML</button>
-
-            <button class="btn btn-shop" onclick="downloadTXT()" style="background: #9b59b6;">Download TXT</button>
-
+    <section id="new-arrivals" class="products">
+        <div class="section-header">
+            <h2>New Arrivals</h2>
+            <p>Curated pieces from our Parisian studio.</p>
         </div>
 
-    </div>
-
-    
-
-    <!-- Main Container -->
-
-    <div class="container">
-
-        <!-- Products Section -->
-
-        <h2 class="section-title" id="products">Featured Collection</h2>
 
         <div class="product-grid">
-
-            <!-- Product 1 -->
-
-            <div class="product-card" onclick="viewProduct(1)">
-
-                <div class="product-image" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">
-
-                    💎
-
-                    <div class="product-badge">BESTSELLER</div>
-
-                </div>
-
-                <div class="product-info">
-
-                    <div class="product-name">Golden Harmony Pendant</div>
-
-                    <div class="product-description">18K gold-plated pendant with cubic zirconia</div>
-
-                    <div class="product-price">₹12,499</div>
-
-                    <button class="btn btn-primary" onclick="addToCart(event, 1, 'Golden Harmony Pendant', 12499)">Add to Cart</button>
-
-                </div>
-
-            </div>
-
             
-
-            <!-- Product 2 -->
-
-            <div class="product-card" onclick="viewProduct(2)">
-
-                <div class="product-image" style="background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);">
-
-                    💠
-
+            <div class="product-card">
+                <div class="img-container">
+                    <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Diamond Ring" class="product-img">
                 </div>
-
-                <div class="product-info">
-
-                    <div class="product-name">Silver Moonlight Necklace</div>
-
-                    <div class="product-description">Sterling silver chain with moonstone</div>
-
-                    <div class="product-price">₹16,699</div>
-
-                    <button class="btn btn-primary" onclick="addToCart(event, 2, 'Silver Moonlight Necklace', 16699)">Add to Cart</button>
-
-                </div>
-
+                <h3 class="product-title">The Solitaire Eternal</h3>
+                <span class="product-price">$12,500</span>
+                <button class="btn btn-dark" style="font-size: 0.7rem; padding: 10px 20px;">Add to Bag</button>
             </div>
 
-            
 
-            <!-- Product 3 -->
-
-            <div class="product-card" onclick="viewProduct(3)">
-
-                <div class="product-image" style="background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%);">
-
-                    💖
-
-                    <div class="product-badge">NEW</div>
-
+            <div class="product-card">
+                <div class="img-container">
+                    <img src="https://plus.unsplash.com/premium_photo-1681276170092-446cd1b5b32d?q=80&w=688&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Gold Pendant" class="product-img">
                 </div>
-
-                <div class="product-info">
-
-                    <div class="product-name">Rose Quartz Heart</div>
-
-                    <div class="product-description">Natural rose quartz in rose gold setting</div>
-
-                    <div class="product-price">₹10,849</div>
-
-                    <button class="btn btn-primary" onclick="addToCart(event, 3, 'Rose Quartz Heart', 10849)">Add to Cart</button>
-
-                </div>
-
+                <h3 class="product-title">Aura Gold Pendant</h3>
+                <span class="product-price">$2,800</span>
+                <button class="btn btn-dark" style="font-size: 0.7rem; padding: 10px 20px;">Add to Bag</button>
             </div>
 
-            
 
-            <!-- Product 4 -->
-
-            <div class="product-card" onclick="viewProduct(4)">
-
-                <div class="product-image" style="background: linear-gradient(135deg, #4169e1 0%, #1e90ff 100%);">
-
-                    💙
-
+            <div class="product-card">
+                <div class="img-container">
+                    <img src="https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Pearl Earrings" class="product-img">
                 </div>
-
-                <div class="product-info">
-
-                    <div class="product-name">Sapphire Elegance</div>
-
-                    <div class="product-description">Lab-created sapphire with white gold</div>
-
-                    <div class="product-price">₹24,999</div>
-
-                    <button class="btn btn-primary" onclick="addToCart(event, 4, 'Sapphire Elegance', 24999)">Add to Cart</button>
-
-                </div>
-
+                <h3 class="product-title">Lunar Drop Earrings</h3>
+                <span class="product-price">$4,200</span>
+                <button class="btn btn-dark" style="font-size: 0.7rem; padding: 10px 20px;">Add to Bag</button>
             </div>
 
-            
-
-            <!-- Product 5 -->
-
-            <div class="product-card" onclick="viewProduct(5)">
-
-                <div class="product-image" style="background: linear-gradient(135deg, #32cd32 0%, #90ee90 100%);">
-
-                    💚
-
-                    <div class="product-badge">SALE</div>
-
-                </div>
-
-                <div class="product-info">
-
-                    <div class="product-name">Emerald Dream</div>
-
-                    <div class="product-description">Emerald-cut green crystal pendant</div>
-
-                    <div class="product-price">₹14,999</div>
-
-                    <button class="btn btn-primary" onclick="addToCart(event, 5, 'Emerald Dream', 14999)">Add to Cart</button>
-
-                </div>
-
-            </div>
-
-            
-
-            <!-- Product 6 -->
-
-            <div class="product-card" onclick="viewProduct(6)">
-
-                <div class="product-image" style="background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);">
-
-                    🟤
-
-                </div>
-
-                <div class="product-info">
-
-                    <div class="product-name">Amber Sunset</div>
-
-                    <div class="product-description">Baltic amber with vintage brass chain</div>
-
-                    <div class="product-price">₹7,499</div>
-
-                    <button class="btn btn-primary" onclick="addToCart(event, 6, 'Amber Sunset', 7499)">Add to Cart</button>
-
-                </div>
-
-            </div>
 
         </div>
+    </section>
 
-        
 
-        <!-- Video Section -->
-
-        <div class="video-section" id="video">
-
-            <h2 class="section-heading">🎥 Craftsmanship Video</h2>
-
-            <p class="section-text">Watch how our artisans handcraft each piece</p>
-
-            <div class="video-container">
-
-                <iframe 
-
-                    src="https://www.youtube.com/embed/iUtnZpzkbG8" 
-
-                    frameborder="0" 
-
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-
-                    allowfullscreen
-
-                    onload="trackVideoLoad()">
-
-                </iframe>
-
-            </div>
-
+    <section id="atelier" class="atelier">
+        <div class="atelier-content">
+            <h2>The Art of Craftsmanship</h2>
+            <p>Every stone is hand-selected by our gemologists and set by master craftsmen with over 30 years of experience. We believe that true luxury lies in the details that often go unseen.</p>
+            <br>
+            <p>Ensure the perfect fit before you order.</p>
+            
+            <a href="#" class="download-link" download>
+                ⬇ Download Ring Size Guide (PDF)
+            </a>
         </div>
 
-        
 
-        <!-- Contact Form Section -->
+        <div class="video-container">
+            <iframe width="100%" height="315" src="https://www.youtube.com/embed/iUtnZpzkbG8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+    </section>
 
-        <div class="contact-section" id="contact">
 
-            <h2 class="section-heading">📝 Custom Design Inquiry</h2>
 
-            <p class="section-text">Have a unique design in mind? Let us bring your vision to life!</p>
 
-            <form id="contactForm" onsubmit="handleFormSubmit(event)">
 
+    <footer id="contact">
+        <div style="flex: 1; min-width: 250px;">
+            <div class="footer-logo">Lumière.</div>
+            <p style="opacity: 0.7; font-size: 0.9rem;">
+                5th Avenue, New York<br>
+                contact@lumiere.com<br>
+                +1 (555) 123-4567
+            </p>
+        </div>
+
+
+        <div class="form-section">
+            <h3>Book a Private Consultation</h3>
+            <p style="opacity: 0.7; font-size: 0.85rem; margin-bottom: 15px;">Speak with a diamond expert.</p>
+            
+            <form class="consultation-form" action="#" method="POST">
                 <div class="form-group">
-
-                    <label for="name">Full Name *</label>
-
-                    <input type="text" id="name" name="name" required>
-
+                    <input type="text" placeholder="Your Name" required>
                 </div>
-
-                
-
                 <div class="form-group">
-
-                    <label for="email">Email Address *</label>
-
-                    <input type="email" id="email" name="email" required>
-
+                    <input type="email" placeholder="Your Email" required>
                 </div>
-
-                
-
                 <div class="form-group">
-
-                    <label for="phone">Phone Number</label>
-
-                    <input type="tel" id="phone" name="phone">
-
-                </div>
-
-                
-
-                <div class="form-group">
-
-                    <label for="interest">Type of Jewelry *</label>
-
-                    <select id="interest" name="interest" required>
-
-                        <option value="">Select an option</option>
-
-                        <option value="necklace">Necklace</option>
-
-                        <option value="pendant">Pendant</option>
-
-                        <option value="custom">Custom Design</option>
-
-                        <option value="repair">Repair Service</option>
-
+                    <select>
+                        <option>Topic: Engagement Rings</option>
+                        <option>Topic: Custom Design</option>
+                        <option>Topic: Repair & Care</option>
                     </select>
-
                 </div>
-
-                
-
-                <div class="form-group">
-
-                    <label for="message">Tell us about your design ideas *</label>
-
-                    <textarea id="message" name="message" required></textarea>
-
-                </div>
-
-                
-
-                <button type="submit" class="btn btn-primary">Submit Inquiry</button>
-
+                <button type="submit" class="submit-btn">Request Appointment</button>
             </form>
-
         </div>
+    </footer>
 
-        
 
-        <!-- Upload Section -->
-
-        <div class="upload-section">
-
-            <h2 class="section-heading">📎 Share Your Inspiration</h2>
-
-            <p class="section-text">Upload images of jewelry designs you love</p>
-
-            <div class="file-upload-wrapper">
-
-                <input type="file" id="fileInput" class="file-upload-input" onchange="handleFileUpload(event)" multiple accept="image/*">
-
-                <label for="fileInput" class="file-upload-label">
-
-                    <span class="file-upload-icon">📸</span>
-
-                    <div>
-
-                        <strong>Click to upload images</strong><br>
-
-                        <span style="color: #666;">or drag and drop</span>
-
-                    </div>
-
-                </label>
-
-            </div>
-
-            <div id="fileInfo" class="file-info"></div>
-
-        </div>
-
-        
-
-        <!-- Stats Section -->
-
-        <h2 class="section-title">📊 Store Analytics</h2>
-
-        <div class="stats">
-
-            <div class="stat-card">
-
-                <div class="stat-number" id="productViews">0</div>
-
-                <div class="stat-label">Product Views</div>
-
-            </div>
-
-            <div class="stat-card">
-
-                <div class="stat-number" id="cartItems">0</div>
-
-                <div class="stat-label">Items in Cart</div>
-
-            </div>
-
-            <div class="stat-card">
-
-                <div class="stat-number" id="formSubmissions">0</div>
-
-                <div class="stat-label">Design Inquiries</div>
-
-            </div>
-
-            <div class="stat-card">
-
-                <div class="stat-number" id="filesUploaded">0</div>
-
-                <div class="stat-label">Images Uploaded</div>
-
-            </div>
-
-            <div class="stat-card">
-
-                <div class="stat-number" id="timeOnPage">0s</div>
-
-                <div class="stat-label">Time on Site</div>
-
-            </div>
-
-            <div class="stat-card">
-
-                <div class="stat-number" id="totalRevenue">₹0</div>
-
-                <div class="stat-label">Cart Total</div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    
-
-    <script>
-
-        // Analytics tracking variables
-
-        let productViewCount = 0;
-
-        let cartItemCount = 0;
-
-        let formSubmissionCount = 0;
-
-        let filesUploadedCount = 0;
-
-        let pageLoadTime = Date.now();
-
-        let cartTotal = 0;
-
-        let cart = [];
-
-        
-
-        // Update time on page
-
-        setInterval(() => {
-
-            const seconds = Math.floor((Date.now() - pageLoadTime) / 1000);
-
-            document.getElementById('timeOnPage').textContent = seconds + 's';
-
-        }, 1000);
-
-        
-
-        // Scroll to products
-
-        function scrollToProducts() {
-
-            document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
-
-            
-
-            // Send event to GA4
-
-            gtag('event', 'button_click', {
-
-                button_type: 'cta_shop_now',
-
-                engagement_level: 'high'
-
-            });
-
-            
-
-            console.log('Shop Collection button clicked:', {
-
-                button_type: 'cta_shop_now',
-
-                timestamp: new Date().toISOString(),
-
-                engagement_level: 'high'
-
-            });
-
-        }
-
-        
-
-        // Download HTML file
-
-        function downloadHTML() {
-
-            try {
-
-                const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-
-                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-
-                const url = URL.createObjectURL(blob);
-
-                const a = document.createElement('a');
-
-                a.href = url;
-
-                a.download = 'luxe-jewelry-store.html';
-
-                a.style.display = 'none';
-
-                document.body.appendChild(a);
-
-                a.click();
-
-                setTimeout(() => {
-
-                    document.body.removeChild(a);
-
-                    URL.revokeObjectURL(url);
-
-                }, 100);
-
-                
-
-                alert('✅ HTML file downloaded successfully!');
-
-                
-
-                console.log('HTML file downloaded:', {
-
-         
+</body>
+</html>
