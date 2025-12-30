@@ -1,0 +1,959 @@
+<html lang="en"><head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function() {
+        const originalConsole = window.console;
+        window.console = {
+          log: (...args) => {
+            originalConsole.log(...args);
+            window.parent.postMessage({ type: 'console', message: args.join(' ') }, '*');
+          },
+          error: (...args) => {
+            originalConsole.error(...args);
+            window.parent.postMessage({ type: 'console', message: 'Error: ' + args.join(' ') }, '*');
+          },
+          warn: (...args) => {
+            originalConsole.warn(...args);
+            window.parent.postMessage({ type: 'console', message: 'Warning: ' + args.join(' ') }, '*');
+          }
+        };
+
+        let requestId = 0;
+        let callbacksMap = new Map();
+        let streamControllers = new Map();
+        
+        window.claude = {
+          complete: (prompt) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'claudeComplete', id, prompt }, '*');
+            });
+          }
+        };
+
+        window.storage = {
+          get: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageGet', id, key, shared }, '*');
+            });
+          },
+          set: (key, value, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageSet', id, key, value, shared }, '*');
+            });
+          },
+          delete: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageDelete', id, key, shared }, '*');
+            });
+          },
+          list: (prefix, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = requestId++;
+              callbacksMap.set(id, { resolve, reject });
+              window.parent.postMessage({ type: 'storageList', id, prefix, shared }, '*');
+            });
+          }
+        };
+
+        let pendingBlobs = new Map();
+        URL.createObjectURL = (blob) => {
+          // Store the blob and create an ID and URL for it
+          const blobId = `blob-${Date.now()}-${Math.random()}`;
+          pendingBlobs.set(blobId, blob);
+          return `blob-request://${blobId}`;
+        };
+
+        URL.revokeObjectURL = (url) => {
+          // Remove the blob from our store
+          const blobId = url.replace("blob-request://", "");
+          pendingBlobs.delete(blobId);
+        };
+
+        const getBlobFromURL = (url) => {
+          const blobId = url.replace("blob-request://", "");
+          return pendingBlobs.get(blobId);
+        };
+
+        // Override global fetch with streaming support
+        window.fetch = (url, init = {}) => {
+          return new Promise((resolve, reject) => {
+            const id = requestId++;
+            const channelId = `fetch-${id}-${Date.now()}`;
+            
+            callbacksMap.set(id, { 
+              resolve: (response) => {
+                // Create a ReadableStream for the response body
+                const stream = new ReadableStream({
+                  start(controller) {
+                    streamControllers.set(channelId, controller);
+                  },
+                  cancel() {
+                    streamControllers.delete(channelId);
+                  }
+                });
+                
+                // Create and return the Response with the stream
+                resolve(new Response(stream, {
+                  status: response.status,
+                  statusText: response.statusText,
+                  headers: response.headers
+                }));
+              },
+              reject,
+              channelId
+            });
+            
+            window.parent.postMessage({
+              type: 'proxyFetch',
+              id,
+              url,
+              init,
+              channelId
+            }, '*');
+          });
+        };
+
+        window.addEventListener('message', async (event) => {
+          if (event.data.type === 'takeScreenshot') {
+            const rootElement = document.getElementById('artifacts-component-root-html');
+            if (!rootElement) {
+              window.parent.postMessage({
+                type: 'screenshotError',
+                error: new Error('Root element not found'),
+              }, '*');
+            }
+            const screenshot = await htmlToImage.toPng(rootElement, {
+              imagePlaceholder:
+                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjePDgwX8ACOQDoNsk0PMAAAAASUVORK5CYII=",
+            });
+            window.parent.postMessage({
+              type: 'screenshotData',
+              data: screenshot,
+            }, '*');
+          } else if (event.data.type === 'claudeComplete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.completion);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'proxyFetchResponse') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+              callbacksMap.delete(event.data.id);
+            } else {
+              // Initial response with headers, status, etc.
+              callback.resolve({
+                status: event.data.status,
+                statusText: event.data.statusText,
+                headers: event.data.headers
+              });
+              // Don't delete the callback yet if streaming
+              if (!event.data.body) {
+                callbacksMap.delete(event.data.id);
+              }
+            }
+          } else if (event.data.type === 'proxyFetchStream') {
+            // Handle streaming data chunks
+            const controller = streamControllers.get(event.data.channelId);
+            if (controller) {
+              if (event.data.error) {
+                controller.error(new Error(event.data.error));
+                streamControllers.delete(event.data.channelId);
+              } else if (event.data.done) {
+                controller.close();
+                streamControllers.delete(event.data.channelId);
+                // Clean up the callback
+                const callback = Array.from(callbacksMap.entries()).find(
+                  ([_, value]) => value.channelId === event.data.channelId
+                );
+                if (callback) {
+                  callbacksMap.delete(callback[0]);
+                }
+              } else if (event.data.chunk) {
+                controller.enqueue(new Uint8Array(event.data.chunk));
+              }
+            }
+          } else if (event.data.type === 'storageGet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageSet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageDelete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageList') {
+            const callback = callbacksMap.get(event.data.id);
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          }
+        });
+
+        window.addEventListener('click', (event) => {
+          const isEl = event.target instanceof HTMLElement;
+          if (!isEl) return;
+    
+          // find ancestor links
+          const linkEl = event.target.closest("a");
+          if (!linkEl || !linkEl.href) return;
+    
+          event.preventDefault();
+          event.stopImmediatePropagation();
+    
+          if (linkEl.href.startsWith("blob-request:")) {
+            const blob = getBlobFromURL(linkEl.href);
+            if (!blob) return;
+            void blob.arrayBuffer().then((data) => {
+              window.parent.postMessage({
+                type: "downloadFile",
+                filename: linkEl.download,
+                data,
+                mimeType: blob.type || "application/octet-stream",
+              });
+            });
+          } else if (linkEl.href.startsWith("data:")) {
+            const [header, base64Data] = linkEl.href.split(",");
+            const mimeMatch = header.match(/data:([^;]+)/);
+            const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+            const binaryString = atob(base64Data);
+            const data = Uint8Array.from(binaryString, (c) =>
+              c.charCodeAt(0),
+            ).buffer;
+            window.parent.postMessage({
+              type: "downloadFile",
+              filename: linkEl.download,
+              data,
+              mimeType,
+            });
+          } else {
+            let linkUrl;
+            try {
+              linkUrl = new URL(linkEl.href);
+            } catch (error) {
+              return;
+            }
+    
+            if (linkUrl.hostname === window.location.hostname) return;
+      
+            window.parent.postMessage({
+              type: 'openExternal',
+              href: linkEl.href,
+            }, '*');
+          }
+      });
+
+        const originalOpen = window.open;
+        window.open = function (url) {
+          window.parent.postMessage({
+            type: "openExternal",
+            href: url,
+          }, "*");
+        };
+
+        window.addEventListener('error', (event) => {
+          window.parent.postMessage({ type: 'console', message: 'Uncaught Error: ' + event.message }, '*');
+        });
+      })();
+    </script>
+  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxe Jewelry - Premium Necklaces &amp; Pendants</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            color: #333;
+            padding: 20px;
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), 
+                        linear-gradient(135deg, #c9b037 0%, #ffd700 100%);
+            color: white;
+            text-align: center;
+            padding: 60px 20px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+        }
+        
+        .hero h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+        
+        .hero p {
+            font-size: 1.2em;
+            margin-bottom: 25px;
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Product Grid */
+        .section-title {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            position: relative;
+        }
+        
+        .product-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #e74c3c;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .product-info {
+            padding: 20px;
+        }
+        
+        .product-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        
+        .product-description {
+            color: #7f8c8d;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+        
+        .product-price {
+            font-size: 1.4em;
+            color: #27ae60;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #e67e22;
+            transform: translateY(-2px);
+        }
+        
+        .btn-shop {
+            background: #f39c12;
+            color: white;
+            padding: 12px 35px;
+            font-size: 16px;
+        }
+        
+        /* Contact Form Section */
+        .contact-section {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            margin-bottom: 50px;
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #f39c12;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+        
+        /* Video Section */
+        .video-section {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            margin-bottom: 50px;
+        }
+        
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #000;
+        }
+        
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Upload Section */
+        .upload-section {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            margin-bottom: 50px;
+        }
+        
+        .file-upload-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-upload-input {
+            display: none;
+        }
+        
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 35px;
+            border: 3px dashed #f39c12;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fef9f0;
+        }
+        
+        .file-upload-label:hover {
+            background: #fff3e0;
+            border-color: #e67e22;
+        }
+        
+        .file-upload-icon {
+            font-size: 45px;
+            margin-right: 12px;
+        }
+        
+        .file-info {
+            margin-top: 12px;
+            padding: 12px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        /* Stats Section */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-bottom: 50px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #f39c12;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            margin-top: 8px;
+            font-size: 0.85em;
+        }
+        
+        .section-heading {
+            font-size: 1.6em;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .section-text {
+            margin-bottom: 20px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body id="artifacts-component-root-html">
+    <!-- Hero Section -->
+    <div class="hero">
+        <h1>✨ Luxe Jewelry ✨</h1>
+        <p>Exquisite Necklaces &amp; Pendants</p>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-shop" onclick="scrollToProducts()">Shop Collection</button>
+            <button class="btn btn-shop" onclick="downloadHTML()" style="background: #3498db;">Download HTML</button>
+        </div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Products Section -->
+        <h2 class="section-title" id="products">Featured Collection</h2>
+        <div class="product-grid">
+            <!-- Product 1 -->
+            <div class="product-card" onclick="viewProduct(1)">
+                <div class="product-image" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">
+                    💎
+                    <div class="product-badge">BESTSELLER</div>
+                </div>
+                <div class="product-info">
+                    <div class="product-name">Golden Harmony Pendant</div>
+                    <div class="product-description">18K gold-plated pendant with cubic zirconia</div>
+                    <div class="product-price">₹12,499</div>
+                    <button class="btn btn-primary" onclick="addToCart(event, 1, 'Golden Harmony Pendant', 12499)">Add to Cart</button>
+                </div>
+            </div>
+            
+            <!-- Product 2 -->
+            <div class="product-card" onclick="viewProduct(2)">
+                <div class="product-image" style="background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);">
+                    💠
+                </div>
+                <div class="product-info">
+                    <div class="product-name">Silver Moonlight Necklace</div>
+                    <div class="product-description">Sterling silver chain with moonstone</div>
+                    <div class="product-price">₹16,699</div>
+                    <button class="btn btn-primary" onclick="addToCart(event, 2, 'Silver Moonlight Necklace', 16699)">Add to Cart</button>
+                </div>
+            </div>
+            
+            <!-- Product 3 -->
+            <div class="product-card" onclick="viewProduct(3)">
+                <div class="product-image" style="background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%);">
+                    💖
+                    <div class="product-badge">NEW</div>
+                </div>
+                <div class="product-info">
+                    <div class="product-name">Rose Quartz Heart</div>
+                    <div class="product-description">Natural rose quartz in rose gold setting</div>
+                    <div class="product-price">₹10,849</div>
+                    <button class="btn btn-primary" onclick="addToCart(event, 3, 'Rose Quartz Heart', 10849)">Add to Cart</button>
+                </div>
+            </div>
+            
+            <!-- Product 4 -->
+            <div class="product-card" onclick="viewProduct(4)">
+                <div class="product-image" style="background: linear-gradient(135deg, #4169e1 0%, #1e90ff 100%);">
+                    💙
+                </div>
+                <div class="product-info">
+                    <div class="product-name">Sapphire Elegance</div>
+                    <div class="product-description">Lab-created sapphire with white gold</div>
+                    <div class="product-price">₹24,999</div>
+                    <button class="btn btn-primary" onclick="addToCart(event, 4, 'Sapphire Elegance', 24999)">Add to Cart</button>
+                </div>
+            </div>
+            
+            <!-- Product 5 -->
+            <div class="product-card" onclick="viewProduct(5)">
+                <div class="product-image" style="background: linear-gradient(135deg, #32cd32 0%, #90ee90 100%);">
+                    💚
+                    <div class="product-badge">SALE</div>
+                </div>
+                <div class="product-info">
+                    <div class="product-name">Emerald Dream</div>
+                    <div class="product-description">Emerald-cut green crystal pendant</div>
+                    <div class="product-price">₹14,999</div>
+                    <button class="btn btn-primary" onclick="addToCart(event, 5, 'Emerald Dream', 14999)">Add to Cart</button>
+                </div>
+            </div>
+            
+            <!-- Product 6 -->
+            <div class="product-card" onclick="viewProduct(6)">
+                <div class="product-image" style="background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);">
+                    🟤
+                </div>
+                <div class="product-info">
+                    <div class="product-name">Amber Sunset</div>
+                    <div class="product-description">Baltic amber with vintage brass chain</div>
+                    <div class="product-price">₹7,499</div>
+                    <button class="btn btn-primary" onclick="addToCart(event, 6, 'Amber Sunset', 7499)">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Video Section -->
+        <div class="video-section" id="video">
+            <h2 class="section-heading">🎥 Craftsmanship Video</h2>
+            <p class="section-text">Watch how our artisans handcraft each piece</p>
+            <div class="video-container">
+                <iframe src="https://www.youtube.com/embed/iUtnZpzkbG8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" onload="trackVideoLoad()">
+                </iframe>
+            </div>
+        </div>
+        
+        <!-- Contact Form Section -->
+        <div class="contact-section" id="contact">
+            <h2 class="section-heading">📝 Custom Design Inquiry</h2>
+            <p class="section-text">Have a unique design in mind? Let us bring your vision to life!</p>
+            <form id="contactForm" onsubmit="handleFormSubmit(event)">
+                <div class="form-group">
+                    <label for="name">Full Name *</label>
+                    <input type="text" id="name" name="name" required="">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required="">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="interest">Type of Jewelry *</label>
+                    <select id="interest" name="interest" required="">
+                        <option value="">Select an option</option>
+                        <option value="necklace">Necklace</option>
+                        <option value="pendant">Pendant</option>
+                        <option value="custom">Custom Design</option>
+                        <option value="repair">Repair Service</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">Tell us about your design ideas *</label>
+                    <textarea id="message" name="message" required=""></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Submit Inquiry</button>
+            </form>
+        </div>
+        
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2 class="section-heading">📎 Share Your Inspiration</h2>
+            <p class="section-text">Upload images of jewelry designs you love</p>
+            <div class="file-upload-wrapper">
+                <input type="file" id="fileInput" class="file-upload-input" onchange="handleFileUpload(event)" multiple="" accept="image/*">
+                <label for="fileInput" class="file-upload-label">
+                    <span class="file-upload-icon">📸</span>
+                    <div>
+                        <strong>Click to upload images</strong><br>
+                        <span style="color: #666;">or drag and drop</span>
+                    </div>
+                </label>
+            </div>
+            <div id="fileInfo" class="file-info"></div>
+        </div>
+        
+        <!-- Stats Section -->
+        <h2 class="section-title">📊 Store Analytics</h2>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="productViews">0</div>
+                <div class="stat-label">Product Views</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="cartItems">0</div>
+                <div class="stat-label">Items in Cart</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="formSubmissions">0</div>
+                <div class="stat-label">Design Inquiries</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="filesUploaded">0</div>
+                <div class="stat-label">Images Uploaded</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="timeOnPage">0s</div>
+                <div class="stat-label">Time on Site</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalRevenue">₹0</div>
+                <div class="stat-label">Cart Total</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Analytics tracking variables
+        let productViewCount = 0;
+        let cartItemCount = 0;
+        let formSubmissionCount = 0;
+        let filesUploadedCount = 0;
+        let pageLoadTime = Date.now();
+        let cartTotal = 0;
+        let cart = [];
+        
+        // Update time on page
+        setInterval(() => {
+            const seconds = Math.floor((Date.now() - pageLoadTime) / 1000);
+            document.getElementById('timeOnPage').textContent = seconds + 's';
+        }, 1000);
+        
+        // Scroll to products
+        function scrollToProducts() {
+            document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+            
+            console.log('Shop Collection button clicked:', {
+                button_type: 'cta_shop_now',
+                timestamp: new Date().toISOString(),
+                engagement_level: 'high'
+            });
+        }
+        
+        // Download HTML file
+        function downloadHTML() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'luxe-jewelry-store.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('HTML file downloaded:', {
+                button_type: 'download_html',
+                timestamp: new Date().toISOString(),
+                engagement_level: 'high'
+            });
+        }
+        
+        // View product details
+        function viewProduct(productId) {
+            productViewCount++;
+            document.getElementById('productViews').textContent = productViewCount;
+            
+            const products = {
+                1: 'Golden Harmony Pendant',
+                2: 'Silver Moonlight Necklace',
+                3: 'Rose Quartz Heart',
+                4: 'Sapphire Elegance',
+                5: 'Emerald Dream',
+                6: 'Amber Sunset'
+            };
+            
+            console.log('Product viewed:', {
+                product_id: productId,
+                product_name: products[productId],
+                timestamp: new Date().toISOString(),
+                total_views: productViewCount
+            });
+        }
+        
+        // Add to cart
+        function addToCart(event, productId, productName, price) {
+            event.stopPropagation();
+            
+            cartItemCount++;
+            cartTotal += price;
+            
+            cart.push({
+                id: productId,
+                name: productName,
+                price: price
+            });
+            
+            document.getElementById('cartItems').textContent = cartItemCount;
+            document.getElementById('totalRevenue').textContent = '₹' + cartTotal.toLocaleString('en-IN');
+            
+            console.log('Add to cart:', {
+                button_type: 'add_to_cart',
+                product_id: productId,
+                product_name: productName,
+                price: price,
+                cart_total: cartTotal,
+                cart_item_count: cartItemCount,
+                engagement_level: 'high',
+                timestamp: new Date().toISOString()
+            });
+            
+            alert(`✅ ${productName} added to cart!\n\nCart Total: ₹${cartTotal.toLocaleString('en-IN')}`);
+        }
+        
+        // Form submission tracking
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            formSubmissionCount++;
+            document.getElementById('formSubmissions').textContent = formSubmissionCount;
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                jewelry_type: document.getElementById('interest').value,
+                submission_number: formSubmissionCount,
+                engagement_level: 'very_high'
+            };
+            
+            console.log('Custom design inquiry submitted:', formData);
+            
+            alert('✨ Thank you! We will contact you within 24 hours about your custom design.');
+            document.getElementById('contactForm').reset();
+        }
+        
+        // File upload tracking
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                filesUploadedCount += files.length;
+                document.getElementById('filesUploaded').textContent = filesUploadedCount;
+                
+                const fileInfo = document.getElementById('fileInfo');
+                fileInfo.style.display = 'block';
+                
+                let totalSize = 0;
+                let fileList = '<strong>✅ Uploaded inspiration images:</strong><br>';
+                for (let file of files) {
+                    totalSize += file.size;
+                    fileList += `📷 ${file.name} (${(file.size / 1024).toFixed(2)} KB)<br>`;
+                }
+                fileInfo.innerHTML = fileList;
+                
+                console.log('Inspiration images uploaded:', {
+                    file_count: files.length,
+                    total_size: totalSize,
+                    total_size_kb: (totalSize / 1024).toFixed(2),
+                    file_types: Array.from(files).map(f => f.type),
+                    engagement_level: 'high'
+                });
+            }
+        }
+        
+        // Video load tracking
+        function trackVideoLoad() {
+            console.log('Craftsmanship video loaded:', {
+                video_title: 'Jewelry Craftsmanship',
+                timestamp: new Date().toISOString(),
+                engagement_level: 'medium'
+            });
+        }
+        
+        // Page load tracking
+        window.addEventListener('load', () => {
+            console.log('E-commerce page loaded:', {
+                url: window.location.href,
+                referrer: document.referrer,
+                user_agent: navigator.userAgent,
+                screen_resolution: `${window.screen.width}x${window.screen.height}`,
+                page_type: 'product_listing'
+            });
+        });
+    </script>
+
+</body></html>
